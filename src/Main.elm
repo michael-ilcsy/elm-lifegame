@@ -1,7 +1,9 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, div, table, tbody, td, tr)
+import Html exposing (Html, div, input, label, table, tbody, td, text, tr)
+import Html.Attributes exposing (placeholder, type_, value)
+import Html.Events exposing (onInput)
 
 
 
@@ -10,6 +12,8 @@ import Html exposing (Html, div, table, tbody, td, tr)
 
 type alias Model =
     { cells : Cells
+    , width : String
+    , height : String
     }
 
 
@@ -32,6 +36,8 @@ init =
               , Alive
               ]
             ]
+      , width = "10"
+      , height = "10"
       }
     , Cmd.none
     )
@@ -42,12 +48,18 @@ init =
 
 
 type Msg
-    = NoOp
+    = InputWidth String
+    | InputHeight String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        InputWidth width ->
+            ( { model | width = width }, Cmd.none )
+
+        InputHeight height ->
+            ( { model | height = height }, Cmd.none )
 
 
 
@@ -57,7 +69,9 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div []
-        [ table []
+        [ label [] [ text "縦", input [ type_ "text", value model.height, onInput InputHeight ] [] ]
+        , label [] [ text "横", input [ type_ "text", value model.width, onInput InputWidth ] [] ]
+        , table []
             [ tbody []
                 [ tr [] (viewCells model.cells)
                 ]
