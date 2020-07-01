@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Html exposing (Html, div, input, label, table, tbody, td, text, tr)
-import Html.Attributes exposing (placeholder, type_, value)
+import Html.Attributes exposing (type_, value)
 import Html.Events exposing (onInput)
 
 
@@ -28,17 +28,11 @@ type alias Cells =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { cells =
-            [ [ Dead
-              , Dead
-              ]
-            , [ Alive
-              , Alive
-              ]
-            ]
+    ( { cells = [ [] ]
       , width = 10
       , height = 10
       }
+        |> generateEmptyCells
     , Cmd.none
     )
 
@@ -62,6 +56,7 @@ update msg model =
                         |> String.toInt
                         |> Maybe.withDefault model.width
               }
+                |> generateEmptyCells
             , Cmd.none
             )
 
@@ -72,8 +67,14 @@ update msg model =
                         |> String.toInt
                         |> Maybe.withDefault model.height
               }
+                |> generateEmptyCells
             , Cmd.none
             )
+
+
+generateEmptyCells : Model -> Model
+generateEmptyCells model =
+    { model | cells = List.repeat model.height <| List.repeat model.width Dead }
 
 
 
