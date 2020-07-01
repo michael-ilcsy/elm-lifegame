@@ -12,8 +12,8 @@ import Html.Events exposing (onInput)
 
 type alias Model =
     { cells : Cells
-    , width : String
-    , height : String
+    , width : Int
+    , height : Int
     }
 
 
@@ -36,8 +36,8 @@ init =
               , Alive
               ]
             ]
-      , width = "10"
-      , height = "10"
+      , width = 10
+      , height = 10
       }
     , Cmd.none
     )
@@ -56,10 +56,24 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         InputWidth width ->
-            ( { model | width = width }, Cmd.none )
+            ( { model
+                | width =
+                    width
+                        |> String.toInt
+                        |> Maybe.withDefault model.width
+              }
+            , Cmd.none
+            )
 
         InputHeight height ->
-            ( { model | height = height }, Cmd.none )
+            ( { model
+                | height =
+                    height
+                        |> String.toInt
+                        |> Maybe.withDefault model.height
+              }
+            , Cmd.none
+            )
 
 
 
@@ -69,8 +83,8 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div []
-        [ label [] [ text "縦", input [ type_ "text", value model.height, onInput InputHeight ] [] ]
-        , label [] [ text "横", input [ type_ "text", value model.width, onInput InputWidth ] [] ]
+        [ label [] [ text "縦", input [ type_ "text", value <| String.fromInt model.height, onInput InputHeight ] [] ]
+        , label [] [ text "横", input [ type_ "text", value <| String.fromInt model.width, onInput InputWidth ] [] ]
         , table []
             [ tbody []
                 [ tr [] (viewCells model.cells)
