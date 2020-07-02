@@ -4,6 +4,7 @@ import Browser
 import Html exposing (Html, div, input, label, table, tbody, td, text, tr)
 import Html.Attributes exposing (type_, value)
 import Html.Events exposing (onInput)
+import Random
 
 
 
@@ -14,6 +15,7 @@ type alias Model =
     { cells : Cells
     , width : Int
     , height : Int
+    , aliveProbability : Int
     }
 
 
@@ -28,12 +30,16 @@ type alias Cells =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { cells = [ [] ]
-      , width = 10
-      , height = 10
-      }
-        |> generateEmptyCells
-    , Cmd.none
+    let
+        model =
+            { cells = [ [] ]
+            , width = 10
+            , height = 10
+            , aliveProbability = 50
+            }
+    in
+    ( model
+    , generateRandomCells model
     )
 
 
@@ -44,37 +50,58 @@ init =
 type Msg
     = InputWidth String
     | InputHeight String
+    | GenerateRandomCells Cells
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         InputWidth width ->
-            ( { model
-                | width =
-                    width
-                        |> String.toInt
-                        |> Maybe.withDefault model.width
-              }
-                |> generateEmptyCells
-            , Cmd.none
+            let
+                newModel =
+                    { model
+                        | width =
+                            width
+                                |> String.toInt
+                                |> Maybe.withDefault model.width
+                    }
+            in
+            ( newModel
+            , generateRandomCells newModel
             )
 
         InputHeight height ->
-            ( { model
-                | height =
-                    height
-                        |> String.toInt
-                        |> Maybe.withDefault model.height
-              }
-                |> generateEmptyCells
-            , Cmd.none
+            let
+                newModel =
+                    { model
+                        | height =
+                            height
+                                |> String.toInt
+                                |> Maybe.withDefault model.height
+                    }
+            in
+            ( newModel
+            , generateRandomCells newModel
             )
 
+        GenerateRandomCells cells ->
+            ( { model | cells = cells }, Cmd.none )
 
-generateEmptyCells : Model -> Model
-generateEmptyCells model =
-    { model | cells = List.repeat model.height <| List.repeat model.width Dead }
+
+randomCells : { a | width : Int, height : Int, aliveProbability : Int } -> Random.Generator Cells
+randomCells { width, height, aliveProbability } =
+    Random.list height
+        (Random.list width
+            (Random.weighted
+                ( aliveProbability |> toFloat, Alive )
+                [ ( 100 - aliveProbability |> toFloat, Dead ) ]
+            )
+        )
+
+
+generateRandomCells : { a | width : Int, height : Int, aliveProbability : Int } -> Cmd Msg
+generateRandomCells model =
+    Random.generate GenerateRandomCells (randomCells model)
 
 
 
