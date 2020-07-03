@@ -5,6 +5,7 @@ import Html exposing (Html, div, input, label, table, tbody, td, text, tr)
 import Html.Attributes exposing (class, type_, value)
 import Html.Events exposing (onInput)
 import Random
+import SingleSlider exposing (SingleSlider)
 
 
 
@@ -15,6 +16,11 @@ type alias Model =
     { cells : Cells
     , width : Int
     , height : Int
+    , slider :
+        { width : SingleSlider Msg
+        , height : SingleSlider Msg
+        , aliveProbability : SingleSlider Msg
+        }
     , aliveProbability : Int
     }
 
@@ -31,10 +37,51 @@ type alias Cells =
 init : ( Model, Cmd Msg )
 init =
     let
+        width =
+            10
+
+        height =
+            10
+
+        aliveProbability =
+            30
+
+        widthSlider =
+            SingleSlider.init
+                { min = 1
+                , max = 50
+                , value = width
+                , step = 1
+                , onChange = ChangeWidth
+                }
+
+        heightSlider =
+            SingleSlider.init
+                { min = 1
+                , max = 50
+                , value = height
+                , step = 1
+                , onChange = ChangeHeight
+                }
+
+        aliveProbabilitySlider =
+            SingleSlider.init
+                { min = 0
+                , max = 100
+                , value = aliveProbability
+                , step = 1
+                , onChange = ChangeProbability
+                }
+
         model =
             { cells = [ [] ]
             , width = 10
             , height = 10
+            , slider =
+                { width = widthSlider
+                , height = heightSlider
+                , aliveProbability = aliveProbabilitySlider
+                }
             , aliveProbability = 50
             }
     in
@@ -48,51 +95,75 @@ init =
 
 
 type Msg
-    = InputWidth String
-    | InputHeight String
-    | InputProbability String
+    = ChangeWidth Float
+    | ChangeHeight Float
+    | ChangeProbability Float
     | GenerateRandomCells Cells
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        InputWidth width ->
+        ChangeWidth width ->
             let
+                newWidthSlider =
+                    model.slider.width |> SingleSlider.update width
+
+                oldSlider =
+                    model.slider
+
+                newSlider =
+                    { oldSlider | width = newWidthSlider }
+
                 newModel =
                     { model
                         | width =
-                            width
-                                |> String.toInt
-                                |> Maybe.withDefault model.width
+                            width |> floor
+                        , slider = newSlider
                     }
             in
             ( newModel
             , generateRandomCells newModel
             )
 
-        InputHeight height ->
+        ChangeHeight height ->
             let
+                newWidthSlider =
+                    model.slider.height |> SingleSlider.update height
+
+                oldSlider =
+                    model.slider
+
+                newSlider =
+                    { oldSlider | height = newWidthSlider }
+
                 newModel =
                     { model
                         | height =
-                            height
-                                |> String.toInt
-                                |> Maybe.withDefault model.height
+                            height |> floor
+                        , slider = newSlider
                     }
             in
             ( newModel
             , generateRandomCells newModel
             )
 
-        InputProbability probability ->
+        ChangeProbability probability ->
             let
+                newWidthSlider =
+                    model.slider.aliveProbability |> SingleSlider.update probability
+
+                oldSlider =
+                    model.slider
+
+                newSlider =
+                    { oldSlider | aliveProbability = newWidthSlider }
+
                 newModel =
                     { model
                         | aliveProbability =
-                            probability
-                                |> String.toInt
-                                |> Maybe.withDefault model.aliveProbability
+                            probability |> floor
+                        , slider = newSlider
                     }
             in
             ( newModel
@@ -126,19 +197,9 @@ generateRandomCells model =
 view : Model -> Html Msg
 view model =
     div []
-        [ label [] [ text "縦", input [ type_ "text", value <| String.fromInt model.height, onInput InputHeight ] [] ]
-        , label [] [ text "横", input [ type_ "text", value <| String.fromInt model.width, onInput InputWidth ] [] ]
-        , div []
-            [ label []
-                [ text "生きているセルの確率"
-                , input
-                    [ type_ "text"
-                    , value <| String.fromInt model.aliveProbability
-                    , onInput InputProbability
-                    ]
-                    []
-                ]
-            ]
+        [ div [] [ SingleSlider.view model.slider.width ]
+        , div [] [ SingleSlider.view model.slider.height ]
+        , div [] [ SingleSlider.view model.slider.aliveProbability ]
         , table []
             [ tbody []
                 [ tr [] (viewCells model.cells)
