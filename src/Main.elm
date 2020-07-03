@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Html exposing (Html, div, input, label, table, tbody, td, text, tr)
-import Html.Attributes exposing (type_, value)
+import Html.Attributes exposing (class, type_, value)
 import Html.Events exposing (onInput)
 import Random
 
@@ -137,7 +137,16 @@ viewCellRow cells =
 
 viewCell : Cell -> Html msg
 viewCell cell =
-    td [] []
+    td
+        [ class
+            (if cell == Alive then
+                "alive"
+
+             else
+                ""
+            )
+        ]
+        []
 
 
 
