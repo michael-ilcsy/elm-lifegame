@@ -50,6 +50,7 @@ init =
 type Msg
     = InputWidth String
     | InputHeight String
+    | InputProbability String
     | GenerateRandomCells Cells
 
 
@@ -78,6 +79,20 @@ update msg model =
                             height
                                 |> String.toInt
                                 |> Maybe.withDefault model.height
+                    }
+            in
+            ( newModel
+            , generateRandomCells newModel
+            )
+
+        InputProbability probability ->
+            let
+                newModel =
+                    { model
+                        | aliveProbability =
+                            probability
+                                |> String.toInt
+                                |> Maybe.withDefault model.aliveProbability
                     }
             in
             ( newModel
@@ -113,6 +128,17 @@ view model =
     div []
         [ label [] [ text "縦", input [ type_ "text", value <| String.fromInt model.height, onInput InputHeight ] [] ]
         , label [] [ text "横", input [ type_ "text", value <| String.fromInt model.width, onInput InputWidth ] [] ]
+        , div []
+            [ label []
+                [ text "生きているセルの確率"
+                , input
+                    [ type_ "text"
+                    , value <| String.fromInt model.aliveProbability
+                    , onInput InputProbability
+                    ]
+                    []
+                ]
+            ]
         , table []
             [ tbody []
                 [ tr [] (viewCells model.cells)
