@@ -54,6 +54,12 @@ init =
                 , step = 1
                 , onChange = ChangeWidth
                 }
+                |> SingleSlider.withMaxFormatter (\_ -> "")
+                |> SingleSlider.withMinFormatter (\_ -> "")
+                |> SingleSlider.withValueFormatter
+                    (\val _ ->
+                        "縦のマス数: " ++ (val |> String.fromFloat)
+                    )
 
         heightSlider =
             SingleSlider.init
@@ -63,6 +69,12 @@ init =
                 , step = 1
                 , onChange = ChangeHeight
                 }
+                |> SingleSlider.withMaxFormatter (\_ -> "")
+                |> SingleSlider.withMinFormatter (\_ -> "")
+                |> SingleSlider.withValueFormatter
+                    (\val _ ->
+                        "横のマス数: " ++ (val |> String.fromFloat)
+                    )
 
         aliveProbabilitySlider =
             SingleSlider.init
@@ -72,6 +84,12 @@ init =
                 , step = 1
                 , onChange = ChangeProbability
                 }
+                |> SingleSlider.withMaxFormatter (\_ -> "")
+                |> SingleSlider.withMinFormatter (\_ -> "")
+                |> SingleSlider.withValueFormatter
+                    (\val _ ->
+                        "生きているセルの確率: " ++ (val |> String.fromFloat) ++ "%"
+                    )
 
         model =
             { cells = [ [] ]
