@@ -1,9 +1,8 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, div, input, label, table, tbody, td, text, tr)
-import Html.Attributes exposing (class, type_, value)
-import Html.Events exposing (onInput)
+import Html exposing (Html, div, table, tbody, td, tr)
+import Html.Attributes exposing (class)
 import Random
 import SingleSlider exposing (SingleSlider)
 
@@ -47,65 +46,73 @@ init =
             30
 
         widthSlider =
-            SingleSlider.init
+            initSlider
                 { min = 1
                 , max = 50
                 , value = width
                 , step = 1
                 , onChange = ChangeWidth
                 }
-                |> SingleSlider.withMaxFormatter (\_ -> "")
-                |> SingleSlider.withMinFormatter (\_ -> "")
-                |> SingleSlider.withValueFormatter
-                    (\val _ ->
-                        "縦のマス数: " ++ (val |> String.fromFloat)
-                    )
+                (\val _ ->
+                    "横のマス数: " ++ (val |> String.fromFloat)
+                )
 
         heightSlider =
-            SingleSlider.init
+            initSlider
                 { min = 1
                 , max = 50
                 , value = height
                 , step = 1
                 , onChange = ChangeHeight
                 }
-                |> SingleSlider.withMaxFormatter (\_ -> "")
-                |> SingleSlider.withMinFormatter (\_ -> "")
-                |> SingleSlider.withValueFormatter
-                    (\val _ ->
-                        "横のマス数: " ++ (val |> String.fromFloat)
-                    )
+                (\val _ ->
+                    "縦のマス数: " ++ (val |> String.fromFloat)
+                )
 
         aliveProbabilitySlider =
-            SingleSlider.init
+            initSlider
                 { min = 0
                 , max = 100
                 , value = aliveProbability
                 , step = 1
                 , onChange = ChangeProbability
                 }
-                |> SingleSlider.withMaxFormatter (\_ -> "")
-                |> SingleSlider.withMinFormatter (\_ -> "")
-                |> SingleSlider.withValueFormatter
-                    (\val _ ->
-                        "生きているセルの確率: " ++ (val |> String.fromFloat) ++ "%"
-                    )
+                (\val _ ->
+                    "生きているセルの確率: " ++ (val |> String.fromFloat) ++ "%"
+                )
 
         model =
             { cells = [ [] ]
-            , width = 10
-            , height = 10
+            , width = width
+            , height = height
             , slider =
                 { width = widthSlider
                 , height = heightSlider
                 , aliveProbability = aliveProbabilitySlider
                 }
-            , aliveProbability = 50
+            , aliveProbability = aliveProbability
             }
     in
     ( model
     , generateRandomCells model
     )
+
+
+initSlider :
+    { min : Float
+    , max : Float
+    , step : Float
+    , value : Float
+    , onChange : Float -> msg
+    }
+    -> (Float -> Float -> String)
+    -> SingleSlider msg
+initSlider options formatter =
+    SingleSlider.init
+        options
+        |> SingleSlider.withMaxFormatter (\_ -> "")
+        |> SingleSlider.withMinFormatter (\_ -> "")
+        |> SingleSlider.withValueFormatter formatter
 
 
 
@@ -215,15 +222,20 @@ generateRandomCells model =
 view : Model -> Html Msg
 view model =
     div []
-        [ div [] [ SingleSlider.view model.slider.width ]
-        , div [] [ SingleSlider.view model.slider.height ]
-        , div [] [ SingleSlider.view model.slider.aliveProbability ]
+        [ viewSlider model.slider.width
+        , viewSlider model.slider.height
+        , viewSlider model.slider.aliveProbability
         , table []
             [ tbody []
                 [ tr [] (viewCells model.cells)
                 ]
             ]
         ]
+
+
+viewSlider : SingleSlider msg -> Html msg
+viewSlider slider =
+    div [] [ SingleSlider.view slider ]
 
 
 viewCells : Cells -> List (Html msg)
