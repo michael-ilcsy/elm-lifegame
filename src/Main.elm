@@ -15,11 +15,7 @@ type alias Model =
     { cells : Cells
     , width : Int
     , height : Int
-    , slider :
-        { width : SingleSlider Msg
-        , height : SingleSlider Msg
-        , aliveProbability : SingleSlider Msg
-        }
+    , sliders : Sliders
     , aliveProbability : Int
     }
 
@@ -31,6 +27,17 @@ type Cell
 
 type alias Cells =
     List (List Cell)
+
+
+type alias Slider =
+    SingleSlider Msg
+
+
+type alias Sliders =
+    { width : Slider
+    , height : Slider
+    , aliveProbability : Slider
+    }
 
 
 init : ( Model, Cmd Msg )
@@ -85,7 +92,7 @@ init =
             { cells = [ [] ]
             , width = width
             , height = height
-            , slider =
+            , sliders =
                 { width = widthSlider
                 , height = heightSlider
                 , aliveProbability = aliveProbabilitySlider
@@ -130,70 +137,28 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ChangeWidth width ->
-            let
-                newWidthSlider =
-                    model.slider.width |> SingleSlider.update width
-
-                oldSlider =
-                    model.slider
-
-                newSlider =
-                    { oldSlider | width = newWidthSlider }
-
-                newModel =
-                    { model
-                        | width =
-                            width |> floor
-                        , slider = newSlider
-                    }
-            in
-            ( newModel
-            , generateRandomCells newModel
-            )
+            model
+                |> updateSliders
+                    .width
+                    (\slider sliders -> { sliders | width = slider })
+                    (\value oldModel -> { oldModel | width = value })
+                    width
 
         ChangeHeight height ->
-            let
-                newWidthSlider =
-                    model.slider.height |> SingleSlider.update height
-
-                oldSlider =
-                    model.slider
-
-                newSlider =
-                    { oldSlider | height = newWidthSlider }
-
-                newModel =
-                    { model
-                        | height =
-                            height |> floor
-                        , slider = newSlider
-                    }
-            in
-            ( newModel
-            , generateRandomCells newModel
-            )
+            model
+                |> updateSliders
+                    .height
+                    (\slider sliders -> { sliders | height = slider })
+                    (\value oldModel -> { oldModel | height = value })
+                    height
 
         ChangeProbability probability ->
-            let
-                newWidthSlider =
-                    model.slider.aliveProbability |> SingleSlider.update probability
-
-                oldSlider =
-                    model.slider
-
-                newSlider =
-                    { oldSlider | aliveProbability = newWidthSlider }
-
-                newModel =
-                    { model
-                        | aliveProbability =
-                            probability |> floor
-                        , slider = newSlider
-                    }
-            in
-            ( newModel
-            , generateRandomCells newModel
-            )
+            model
+                |> updateSliders
+                    .aliveProbability
+                    (\slider sliders -> { sliders | aliveProbability = slider })
+                    (\value oldModel -> { oldModel | aliveProbability = value })
+                    probability
 
         GenerateRandomCells cells ->
             ( { model | cells = cells }, Cmd.none )
@@ -215,6 +180,30 @@ generateRandomCells model =
     Random.generate GenerateRandomCells (randomCells model)
 
 
+updateSliders :
+    (Sliders -> Slider)
+    -> (Slider -> Sliders -> Sliders)
+    -> (Int -> Model -> Model)
+    -> Float
+    -> Model
+    -> ( Model, Cmd Msg )
+updateSliders slider sliderUpdater updater newVal model =
+    let
+        newSlider =
+            model.sliders |> slider |> SingleSlider.update newVal
+
+        newSliders =
+            model.sliders |> sliderUpdater newSlider
+
+        slidersUpdater =
+            \sliders oldModel -> { oldModel | sliders = sliders }
+
+        newModel =
+            model |> updater (newVal |> floor) |> slidersUpdater newSliders
+    in
+    ( newModel, generateRandomCells newModel )
+
+
 
 ---- VIEW ----
 
@@ -222,9 +211,9 @@ generateRandomCells model =
 view : Model -> Html Msg
 view model =
     div []
-        [ viewSlider model.slider.width
-        , viewSlider model.slider.height
-        , viewSlider model.slider.aliveProbability
+        [ viewSlider model.sliders.width
+        , viewSlider model.sliders.height
+        , viewSlider model.sliders.aliveProbability
         , table []
             [ tbody []
                 [ tr [] (viewCells model.cells)
@@ -233,7 +222,7 @@ view model =
         ]
 
 
-viewSlider : SingleSlider msg -> Html msg
+viewSlider : Slider -> Html Msg
 viewSlider slider =
     div [] [ SingleSlider.view slider ]
 
