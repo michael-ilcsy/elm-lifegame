@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Array exposing (Array)
 import Browser
 import Html exposing (Html, div, table, tbody, td, tr)
 import Html.Attributes exposing (class)
@@ -202,6 +203,99 @@ updateSliders slider sliderUpdater updater newVal model =
             model |> updater (newVal |> floor) |> slidersUpdater newSliders
     in
     ( newModel, generateRandomCells newModel )
+
+
+nextGen : Cells -> Cells
+nextGen cells =
+    let
+        arrayCells =
+            cells
+                |> cellsToArray
+    in
+    arrayCells
+        |> Array.indexedMap
+            (\yIndex row ->
+                Array.indexedMap
+                    (\xIndex cell ->
+                        resolveCell { x = xIndex, y = yIndex } cell arrayCells
+                    )
+                    row
+            )
+        |> cellsArrayToList
+
+
+resolveCell : { x : Int, y : Int } -> Cell -> Array (Array Cell) -> Cell
+resolveCell { x, y } cell cells =
+    let
+        neighborsPositions =
+            [ { x = x - 1, y = y - 1 }
+            , { x = x - 1, y = y }
+            , { x = x - 1, y = y + 1 }
+            , { x = x, y = y - 1 }
+            , { x = x, y = y + 1 }
+            , { x = x + 1, y = y - 1 }
+            , { x = x + 1, y = y }
+            , { x = x + 1, y = y + 1 }
+            ]
+
+        numOfAliveNeighbors =
+            neighborsPositions
+                |> calcNumOfAliveNeighbors cells
+    in
+    case cell of
+        Dead ->
+            if numOfAliveNeighbors == 3 then
+                Alive
+
+            else
+                Dead
+
+        Alive ->
+            if numOfAliveNeighbors <= 1 then
+                Dead
+
+            else if numOfAliveNeighbors == 2 || numOfAliveNeighbors == 3 then
+                Alive
+
+            else
+                Dead
+
+
+cellsToArray : Cells -> Array (Array Cell)
+cellsToArray cells =
+    cells
+        |> List.map
+            (\row -> Array.fromList row)
+        |> Array.fromList
+
+
+cellsArrayToList : Array (Array Cell) -> Cells
+cellsArrayToList cells =
+    cells
+        |> Array.map
+            (\row -> Array.toList row)
+        |> Array.toList
+
+
+calcNumOfAliveNeighbors : Array (Array Cell) -> List { x : Int, y : Int } -> Int
+calcNumOfAliveNeighbors cells neighborsPositions =
+    neighborsPositions
+        |> List.map
+            (\position ->
+                Array.get position.y cells
+                    |> Maybe.andThen (Array.get position.x)
+                    |> Maybe.withDefault Dead
+            )
+        |> List.foldl
+            (\cell total ->
+                case cell of
+                    Alive ->
+                        1 + total
+
+                    Dead ->
+                        0 + total
+            )
+            0
 
 
 
