@@ -2,10 +2,12 @@ module Main exposing (..)
 
 import Array exposing (Array)
 import Browser
-import Html exposing (Html, div, table, tbody, td, tr)
+import Html exposing (Html, button, div, table, tbody, td, text, tr)
 import Html.Attributes exposing (class)
+import Html.Events exposing (onClick)
 import Random
 import SingleSlider exposing (SingleSlider)
+import Time
 
 
 
@@ -18,6 +20,7 @@ type alias Model =
     , height : Int
     , sliders : Sliders
     , aliveProbability : Int
+    , gameState : GameState
     }
 
 
@@ -39,6 +42,11 @@ type alias Sliders =
     , height : Slider
     , aliveProbability : Slider
     }
+
+
+type GameState
+    = Setting
+    | Running Int
 
 
 init : ( Model, Cmd Msg )
@@ -99,6 +107,7 @@ init =
                 , aliveProbability = aliveProbabilitySlider
                 }
             , aliveProbability = aliveProbability
+            , gameState = Setting
             }
     in
     ( model
@@ -132,6 +141,9 @@ type Msg
     | ChangeHeight Float
     | ChangeProbability Float
     | GenerateRandomCells Cells
+    | StartGame
+    | StopGame
+    | NextGen Int Time.Posix
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -163,6 +175,20 @@ update msg model =
 
         GenerateRandomCells cells ->
             ( { model | cells = cells }, Cmd.none )
+
+        StartGame ->
+            ( { model | gameState = Running 1 }, Cmd.none )
+
+        StopGame ->
+            ( { model | gameState = Setting }, Cmd.none )
+
+        NextGen generationCount _ ->
+            ( { model
+                | gameState = Running generationCount
+                , cells = nextGen model.cells
+              }
+            , Cmd.none
+            )
 
 
 randomCells : { a | width : Int, height : Int, aliveProbability : Int } -> Random.Generator Cells
@@ -202,7 +228,7 @@ updateSliders slider sliderUpdater updater newVal model =
         newModel =
             model |> updater (newVal |> floor) |> slidersUpdater newSliders
     in
-    ( newModel, generateRandomCells newModel )
+    ( { newModel | gameState = Setting }, generateRandomCells newModel )
 
 
 nextGen : Cells -> Cells
@@ -299,6 +325,20 @@ calcNumOfAliveNeighbors cells neighborsPositions =
 
 
 
+---- SUBSCRIPTIONS ----
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model.gameState of
+        Setting ->
+            Sub.none
+
+        Running generationCount ->
+            Time.every 100 <| NextGen <| generationCount + 1
+
+
+
 ---- VIEW ----
 
 
@@ -308,6 +348,9 @@ view model =
         [ viewSlider model.sliders.width
         , viewSlider model.sliders.height
         , viewSlider model.sliders.aliveProbability
+        , button [ onClick StartGame ] [ text "start" ]
+        , button [ onClick StopGame ] [ text "stop" ]
+        , viewGenerationCount model.gameState
         , table []
             [ tbody []
                 [ tr [] (viewCells model.cells)
@@ -349,6 +392,16 @@ viewCell cell =
         []
 
 
+viewGenerationCount : GameState -> Html Msg
+viewGenerationCount gameState =
+    case gameState of
+        Setting ->
+            div [] []
+
+        Running generationCount ->
+            div [] [ text <| "Generation: " ++ String.fromInt generationCount ]
+
+
 
 ---- PROGRAM ----
 
@@ -359,5 +412,5 @@ main =
         { view = view
         , init = \_ -> init
         , update = update
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
         }
