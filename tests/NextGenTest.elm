@@ -2,7 +2,7 @@ module NextGenTest exposing (..)
 
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer)
-import Main exposing (Cell(..), nextGen)
+import Main exposing (Cell(..), Cells, nextGen)
 import Random.List
 import Shrink
 import Test exposing (..)
@@ -38,6 +38,40 @@ all =
                  ]
                     |> List.map (\( count, cell ) -> deadNormalCellsTestHelper count cell)
                 )
+            ]
+        , describe "周りに8マスしないセルのテスト"
+            [ test "左上のセルのテスト" <|
+                specialCellsTestHelper
+                    [ [ Alive, Dead ], [ Dead, Dead ] ]
+                    [ [ Dead, Dead ], [ Dead, Dead ] ]
+            , test "右上のセルのテスト" <|
+                specialCellsTestHelper
+                    [ [ Dead, Alive ], [ Dead, Dead ] ]
+                    [ [ Dead, Dead ], [ Dead, Dead ] ]
+            , test "左下のセルのテスト" <|
+                specialCellsTestHelper
+                    [ [ Dead, Dead ], [ Alive, Dead ] ]
+                    [ [ Dead, Dead ], [ Dead, Dead ] ]
+            , test "右下のセルのテスト" <|
+                specialCellsTestHelper
+                    [ [ Dead, Dead ], [ Dead, Alive ] ]
+                    [ [ Dead, Dead ], [ Dead, Dead ] ]
+            , test "左辺のセルのテスト" <|
+                specialCellsTestHelper
+                    [ [ Dead, Dead ], [ Alive, Dead ], [ Dead, Dead ] ]
+                    [ [ Dead, Dead ], [ Dead, Dead ], [ Dead, Dead ] ]
+            , test "上辺のセルのテスト" <|
+                specialCellsTestHelper
+                    [ [ Dead, Alive, Dead ], [ Dead, Dead, Dead ] ]
+                    [ [ Dead, Dead, Dead ], [ Dead, Dead, Dead ] ]
+            , test "右辺のセルのテスト" <|
+                specialCellsTestHelper
+                    [ [ Dead, Dead ], [ Dead, Alive ], [ Dead, Dead ] ]
+                    [ [ Dead, Dead ], [ Dead, Dead ], [ Dead, Dead ] ]
+            , test "下辺のセルのテスト" <|
+                specialCellsTestHelper
+                    [ [ Dead, Dead, Dead ], [ Dead, Alive, Dead ] ]
+                    [ [ Dead, Dead, Dead ], [ Dead, Dead, Dead ] ]
             ]
         ]
 
@@ -133,3 +167,13 @@ cellsExpectation isTargetAlive expectedCell list =
                     Nothing
     in
     Expect.equal (Just expectedCell) actualCell
+
+
+specialCellsTestHelper : Cells -> Cells -> (() -> Expectation)
+specialCellsTestHelper previousCells expectedCells =
+    \_ ->
+        Expect.equal
+            (nextGen
+                previousCells
+            )
+            expectedCells
