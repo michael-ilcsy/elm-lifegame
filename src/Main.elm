@@ -3,7 +3,7 @@ module Main exposing (..)
 import Array exposing (Array)
 import Browser
 import Html exposing (Html, button, div, table, tbody, td, text, tr)
-import Html.Attributes exposing (class)
+import Html.Attributes exposing (class, disabled)
 import Html.Events exposing (onClick)
 import Random
 import SingleSlider exposing (SingleSlider)
@@ -152,6 +152,13 @@ initSlider options formatter =
         |> SingleSlider.withMaxFormatter (\_ -> "")
         |> SingleSlider.withMinFormatter (\_ -> "")
         |> SingleSlider.withValueFormatter formatter
+
+
+isEmptyCells : Cells -> Bool
+isEmptyCells cells =
+    List.all
+        (List.all (\cell -> cell == Dead))
+        cells
 
 
 
@@ -404,9 +411,11 @@ view model =
         , viewSlider model.sliders.height
         , viewSlider model.sliders.aliveProbability
         , viewSlider model.sliders.interval
-        , div [ onClick Generate ] [ button [] [ text "generate" ] ]
-        , button [ onClick StartGame ] [ text "start" ]
-        , button [ onClick StopGame ] [ text "stop" ]
+        , div []
+            [ viewGenerateButton model.gameState
+            ]
+        , viewStartButton model
+        , viewStopButton model.gameState
         , viewGenerationCount model.gameState
         , table []
             [ tbody []
@@ -419,6 +428,33 @@ view model =
 viewSlider : Slider -> Html Msg
 viewSlider slider =
     div [] [ SingleSlider.view slider ]
+
+
+viewGenerateButton : GameState -> Html Msg
+viewGenerateButton gameState =
+    button
+        [ onClick Generate
+        , disabled <| gameState /= Setting
+        ]
+        [ text "generate" ]
+
+
+viewStartButton : Model -> Html Msg
+viewStartButton model =
+    button
+        [ onClick StartGame
+        , disabled <| isEmptyCells model.cells || model.gameState /= Setting
+        ]
+        [ text "start" ]
+
+
+viewStopButton : GameState -> Html Msg
+viewStopButton gameState =
+    button
+        [ onClick StopGame
+        , disabled <| gameState == Setting
+        ]
+        [ text "stop" ]
 
 
 viewCells : Cells -> List (Html msg)
