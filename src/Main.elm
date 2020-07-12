@@ -172,6 +172,7 @@ type Msg
     | ChangeInterval Float
     | Generate
     | GenerateRandomCells Cells
+    | Clear
     | StartGame
     | StopGame
     | NextGen Int Time.Posix
@@ -237,6 +238,9 @@ update msg model =
 
         GenerateRandomCells cells ->
             ( { model | cells = cells }, Cmd.none )
+
+        Clear ->
+            ( model |> generateEmptyCells, Cmd.none )
 
         StartGame ->
             ( { model | gameState = Running 1 }, Cmd.none )
@@ -413,6 +417,7 @@ view model =
         , viewSlider model.sliders.interval
         , div []
             [ viewGenerateButton model.gameState
+            , viewClearButton model.gameState
             ]
         , viewStartButton model
         , viewStopButton model.gameState
@@ -437,6 +442,15 @@ viewGenerateButton gameState =
         , disabled <| gameState /= Setting
         ]
         [ text "generate" ]
+
+
+viewClearButton : GameState -> Html Msg
+viewClearButton gameState =
+    button
+        [ onClick Clear
+        , disabled <| gameState /= Setting
+        ]
+        [ text "clear" ]
 
 
 viewStartButton : Model -> Html Msg
