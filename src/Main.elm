@@ -20,6 +20,7 @@ type alias Model =
     , height : Int
     , sliders : Sliders
     , aliveProbability : Int
+    , interval : Int
     , gameState : GameState
     }
 
@@ -41,6 +42,7 @@ type alias Sliders =
     { width : Slider
     , height : Slider
     , aliveProbability : Slider
+    , interval : Slider
     }
 
 
@@ -60,6 +62,9 @@ init =
 
         aliveProbability =
             30
+
+        interval =
+            100
 
         widthSlider =
             initSlider
@@ -97,6 +102,18 @@ init =
                     "生きているセルの確率: " ++ (val |> String.fromFloat) ++ "%"
                 )
 
+        intervalSlider =
+            initSlider
+                { min = 50
+                , max = 1000
+                , value = interval
+                , step = 50
+                , onChange = ChangeInterval
+                }
+                (\val _ ->
+                    "更新間隔: " ++ (val |> String.fromFloat) ++ "ms"
+                )
+
         model =
             { cells = [ [] ]
             , width = width
@@ -105,7 +122,9 @@ init =
                 { width = widthSlider
                 , height = heightSlider
                 , aliveProbability = aliveProbabilitySlider
+                , interval = intervalSlider
                 }
+            , interval = interval
             , aliveProbability = aliveProbability
             , gameState = Setting
             }
@@ -140,6 +159,7 @@ type Msg
     = ChangeWidth Float
     | ChangeHeight Float
     | ChangeProbability Float
+    | ChangeInterval Float
     | GenerateRandomCells Cells
     | StartGame
     | StopGame
@@ -171,6 +191,14 @@ update msg model =
                     .aliveProbability
                     (\slider sliders -> { sliders | aliveProbability = slider })
                     (\value oldModel -> { oldModel | aliveProbability = value })
+                    probability
+
+        ChangeInterval probability ->
+            model
+                |> updateSliders
+                    .interval
+                    (\slider sliders -> { sliders | interval = slider })
+                    (\value oldModel -> { oldModel | interval = value })
                     probability
 
         GenerateRandomCells cells ->
@@ -335,7 +363,7 @@ subscriptions model =
             Sub.none
 
         Running generationCount ->
-            Time.every 100 <| NextGen <| generationCount + 1
+            Time.every (toFloat model.interval) <| NextGen <| generationCount + 1
 
 
 
@@ -348,6 +376,7 @@ view model =
         [ viewSlider model.sliders.width
         , viewSlider model.sliders.height
         , viewSlider model.sliders.aliveProbability
+        , viewSlider model.sliders.interval
         , button [ onClick StartGame ] [ text "start" ]
         , button [ onClick StopGame ] [ text "stop" ]
         , viewGenerationCount model.gameState
