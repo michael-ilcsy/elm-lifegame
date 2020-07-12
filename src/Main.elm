@@ -113,25 +113,28 @@ init =
                 (\val _ ->
                     "更新間隔: " ++ (val |> String.fromFloat) ++ "ms"
                 )
-
-        model =
-            { cells = [ [] ]
-            , width = width
-            , height = height
-            , sliders =
-                { width = widthSlider
-                , height = heightSlider
-                , aliveProbability = aliveProbabilitySlider
-                , interval = intervalSlider
-                }
-            , interval = interval
-            , aliveProbability = aliveProbability
-            , gameState = Setting
-            }
     in
-    ( model
-    , generateRandomCells model
+    ( { cells = [ [] ]
+      , width = width
+      , height = height
+      , sliders =
+            { width = widthSlider
+            , height = heightSlider
+            , aliveProbability = aliveProbabilitySlider
+            , interval = intervalSlider
+            }
+      , interval = interval
+      , aliveProbability = aliveProbability
+      , gameState = Setting
+      }
+        |> generateEmptyCells
+    , Cmd.none
     )
+
+
+generateEmptyCells : Model -> Model
+generateEmptyCells model =
+    { model | cells = List.repeat model.height <| List.repeat model.width Dead }
 
 
 initSlider :
@@ -160,6 +163,7 @@ type Msg
     | ChangeHeight Float
     | ChangeProbability Float
     | ChangeInterval Float
+    | Generate
     | GenerateRandomCells Cells
     | StartGame
     | StopGame
@@ -221,6 +225,9 @@ update msg model =
                 Running _ ->
                     ( model, Cmd.none )
 
+        Generate ->
+            ( model, generateRandomCells model )
+
         GenerateRandomCells cells ->
             ( { model | cells = cells }, Cmd.none )
 
@@ -276,7 +283,7 @@ updateSliders slider sliderUpdater updater newVal model =
         newModel =
             model |> updater (newVal |> floor) |> slidersUpdater newSliders
     in
-    ( newModel, generateRandomCells newModel )
+    ( newModel, Cmd.none )
 
 
 nextGen : Cells -> Cells
@@ -397,6 +404,7 @@ view model =
         , viewSlider model.sliders.height
         , viewSlider model.sliders.aliveProbability
         , viewSlider model.sliders.interval
+        , div [ onClick Generate ] [ button [] [ text "generate" ] ]
         , button [ onClick StartGame ] [ text "start" ]
         , button [ onClick StopGame ] [ text "stop" ]
         , viewGenerationCount model.gameState
