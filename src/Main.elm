@@ -170,36 +170,56 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ChangeWidth width ->
-            model
-                |> updateSliders
-                    .width
-                    (\slider sliders -> { sliders | width = slider })
-                    (\value oldModel -> { oldModel | width = value })
-                    width
+            case model.gameState of
+                Setting ->
+                    model
+                        |> updateSliders
+                            .width
+                            (\slider sliders -> { sliders | width = slider })
+                            (\value oldModel -> { oldModel | width = value })
+                            width
+
+                Running _ ->
+                    ( model, Cmd.none )
 
         ChangeHeight height ->
-            model
-                |> updateSliders
-                    .height
-                    (\slider sliders -> { sliders | height = slider })
-                    (\value oldModel -> { oldModel | height = value })
-                    height
+            case model.gameState of
+                Setting ->
+                    model
+                        |> updateSliders
+                            .height
+                            (\slider sliders -> { sliders | height = slider })
+                            (\value oldModel -> { oldModel | height = value })
+                            height
+
+                Running _ ->
+                    ( model, Cmd.none )
 
         ChangeProbability probability ->
-            model
-                |> updateSliders
-                    .aliveProbability
-                    (\slider sliders -> { sliders | aliveProbability = slider })
-                    (\value oldModel -> { oldModel | aliveProbability = value })
-                    probability
+            case model.gameState of
+                Setting ->
+                    model
+                        |> updateSliders
+                            .aliveProbability
+                            (\slider sliders -> { sliders | aliveProbability = slider })
+                            (\value oldModel -> { oldModel | aliveProbability = value })
+                            probability
 
-        ChangeInterval probability ->
-            model
-                |> updateSliders
-                    .interval
-                    (\slider sliders -> { sliders | interval = slider })
-                    (\value oldModel -> { oldModel | interval = value })
-                    probability
+                Running _ ->
+                    ( model, Cmd.none )
+
+        ChangeInterval interval ->
+            case model.gameState of
+                Setting ->
+                    model
+                        |> updateSliders
+                            .interval
+                            (\slider sliders -> { sliders | interval = slider })
+                            (\value oldModel -> { oldModel | interval = value })
+                            interval
+
+                Running _ ->
+                    ( model, Cmd.none )
 
         GenerateRandomCells cells ->
             ( { model | cells = cells }, Cmd.none )
@@ -256,7 +276,7 @@ updateSliders slider sliderUpdater updater newVal model =
         newModel =
             model |> updater (newVal |> floor) |> slidersUpdater newSliders
     in
-    ( { newModel | gameState = Setting }, generateRandomCells newModel )
+    ( newModel, generateRandomCells newModel )
 
 
 nextGen : Cells -> Cells
