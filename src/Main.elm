@@ -34,6 +34,10 @@ type alias Cells =
     Array (Array Cell)
 
 
+type alias CellPosition =
+    { x : Int, y : Int }
+
+
 type alias Slider =
     SingleSlider Msg
 
@@ -114,7 +118,7 @@ init =
                     "更新間隔: " ++ (val |> String.fromFloat) ++ "ms"
                 )
     in
-    ( { cells = listToCells [ [] ]
+    ( { cells = generateEmptyCells { x = width, y = height }
       , width = width
       , height = height
       , sliders =
@@ -127,14 +131,13 @@ init =
       , aliveProbability = aliveProbability
       , gameState = Setting
       }
-        |> generateEmptyCells
     , Cmd.none
     )
 
 
-generateEmptyCells : Model -> Model
-generateEmptyCells model =
-    { model | cells = Array.repeat model.height <| Array.repeat model.width Dead }
+generateEmptyCells : CellPosition -> Cells
+generateEmptyCells { x, y } =
+    Array.repeat y <| Array.repeat x Dead
 
 
 initSlider :
@@ -160,6 +163,13 @@ isEmptyCells cells =
         |> cellsToList
         |> List.all
             (List.all (\cell -> cell == Dead))
+
+
+getCell : Cells -> CellPosition -> Cell
+getCell cells { x, y } =
+    Array.get y cells
+        |> Maybe.andThen (Array.get x)
+        |> Maybe.withDefault Dead
 
 
 
@@ -241,7 +251,11 @@ update msg model =
             ( { model | cells = cells }, Cmd.none )
 
         Clear ->
-            ( model |> generateEmptyCells, Cmd.none )
+            ( { model
+                | cells = generateEmptyCells { x = model.width, y = model.height }
+              }
+            , Cmd.none
+            )
 
         StartGame ->
             ( { model | gameState = Running 1 }, Cmd.none )
@@ -315,7 +329,7 @@ nextGen cells =
             )
 
 
-resolveCell : { x : Int, y : Int } -> Cell -> Array (Array Cell) -> Cell
+resolveCell : CellPosition -> Cell -> Cells -> Cell
 resolveCell { x, y } cell cells =
     let
         neighborsPositions =
@@ -352,15 +366,11 @@ resolveCell { x, y } cell cells =
                 Dead
 
 
-calcNumOfAliveNeighbors : Array (Array Cell) -> List { x : Int, y : Int } -> Int
+calcNumOfAliveNeighbors : Cells -> List CellPosition -> Int
 calcNumOfAliveNeighbors cells neighborsPositions =
     neighborsPositions
         |> List.map
-            (\position ->
-                Array.get position.y cells
-                    |> Maybe.andThen (Array.get position.x)
-                    |> Maybe.withDefault Dead
-            )
+            (getCell cells)
         |> List.foldl
             (\cell total ->
                 case cell of
@@ -388,14 +398,12 @@ updateCellSize : Model -> Model
 updateCellSize model =
     let
         newCells =
-            (Array.repeat model.height <| Array.repeat model.width Dead)
+            generateEmptyCells { x = model.width, y = model.height }
                 |> Array.indexedMap
                     (\yIndex row ->
                         Array.indexedMap
                             (\xIndex _ ->
-                                Array.get yIndex model.cells
-                                    |> Maybe.andThen (Array.get xIndex)
-                                    |> Maybe.withDefault Dead
+                                getCell model.cells { x = xIndex, y = yIndex }
                             )
                             row
                     )
