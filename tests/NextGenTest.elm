@@ -2,7 +2,7 @@ module NextGenTest exposing (..)
 
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer)
-import Main exposing (Cell(..), Cells, nextGen)
+import Main exposing (Cell(..), Cells, cellsToList, listToCells, nextGen)
 import Random.List
 import Shrink
 import Test exposing (..)
@@ -159,7 +159,7 @@ cellsExpectation isTargetAlive expectedCell list =
                     )
 
         actualCell =
-            case nextGen baseCells of
+            case cellsToList <| nextGen <| listToCells baseCells of
                 [ [ _, _, _ ], [ _, a, _ ], [ _, _, _ ] ] ->
                     Just a
 
@@ -169,11 +169,12 @@ cellsExpectation isTargetAlive expectedCell list =
     Expect.equal (Just expectedCell) actualCell
 
 
-specialCellsTestHelper : Cells -> Cells -> (() -> Expectation)
+specialCellsTestHelper : List (List Cell) -> List (List Cell) -> (() -> Expectation)
 specialCellsTestHelper previousCells expectedCells =
     \_ ->
         Expect.equal
-            (nextGen
-                previousCells
+            (nextGen <|
+                listToCells previousCells
             )
-            expectedCells
+        <|
+            listToCells expectedCells

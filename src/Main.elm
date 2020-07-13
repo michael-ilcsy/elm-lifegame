@@ -31,7 +31,7 @@ type Cell
 
 
 type alias Cells =
-    List (List Cell)
+    Array (Array Cell)
 
 
 type alias Slider =
@@ -114,7 +114,7 @@ init =
                     "更新間隔: " ++ (val |> String.fromFloat) ++ "ms"
                 )
     in
-    ( { cells = [ [] ]
+    ( { cells = listToCells [ [] ]
       , width = width
       , height = height
       , sliders =
@@ -134,7 +134,7 @@ init =
 
 generateEmptyCells : Model -> Model
 generateEmptyCells model =
-    { model | cells = List.repeat model.height <| List.repeat model.width Dead }
+    { model | cells = Array.repeat model.height <| Array.repeat model.width Dead }
 
 
 initSlider :
@@ -156,9 +156,10 @@ initSlider options formatter =
 
 isEmptyCells : Cells -> Bool
 isEmptyCells cells =
-    List.all
-        (List.all (\cell -> cell == Dead))
-        cells
+    cells
+        |> cellsToList
+        |> List.all
+            (List.all (\cell -> cell == Dead))
 
 
 
@@ -266,6 +267,7 @@ randomCells { width, height, aliveProbability } =
                 [ ( 100 - aliveProbability |> toFloat, Dead ) ]
             )
         )
+        |> Random.map listToCells
 
 
 generateRandomCells : { a | width : Int, height : Int, aliveProbability : Int } -> Cmd Msg
@@ -302,21 +304,15 @@ updateSliders slider sliderUpdater updater newVal model =
 
 nextGen : Cells -> Cells
 nextGen cells =
-    let
-        arrayCells =
-            cells
-                |> cellsToArray
-    in
-    arrayCells
+    cells
         |> Array.indexedMap
             (\yIndex row ->
                 Array.indexedMap
                     (\xIndex cell ->
-                        resolveCell { x = xIndex, y = yIndex } cell arrayCells
+                        resolveCell { x = xIndex, y = yIndex } cell cells
                     )
                     row
             )
-        |> cellsArrayToList
 
 
 resolveCell : { x : Int, y : Int } -> Cell -> Array (Array Cell) -> Cell
@@ -356,22 +352,6 @@ resolveCell { x, y } cell cells =
                 Dead
 
 
-cellsToArray : Cells -> Array (Array Cell)
-cellsToArray cells =
-    cells
-        |> List.map
-            (\row -> Array.fromList row)
-        |> Array.fromList
-
-
-cellsArrayToList : Array (Array Cell) -> Cells
-cellsArrayToList cells =
-    cells
-        |> Array.map
-            (\row -> Array.toList row)
-        |> Array.toList
-
-
 calcNumOfAliveNeighbors : Array (Array Cell) -> List { x : Int, y : Int } -> Int
 calcNumOfAliveNeighbors cells neighborsPositions =
     neighborsPositions
@@ -393,25 +373,32 @@ calcNumOfAliveNeighbors cells neighborsPositions =
             0
 
 
+listToCells : List (List Cell) -> Cells
+listToCells =
+    Array.fromList >> Array.map Array.fromList
+
+
+cellsToList : Cells -> List (List Cell)
+cellsToList =
+    Array.map Array.toList
+        >> Array.toList
+
+
 updateCellSize : Model -> Model
 updateCellSize model =
     let
-        arrayCells =
-            cellsToArray model.cells
-
         newCells =
             (Array.repeat model.height <| Array.repeat model.width Dead)
                 |> Array.indexedMap
                     (\yIndex row ->
                         Array.indexedMap
                             (\xIndex _ ->
-                                Array.get yIndex arrayCells
+                                Array.get yIndex model.cells
                                     |> Maybe.andThen (Array.get xIndex)
                                     |> Maybe.withDefault Dead
                             )
                             row
                     )
-                |> cellsArrayToList
     in
     { model | cells = newCells }
 
@@ -500,6 +487,7 @@ viewStopButton gameState =
 viewCells : Cells -> List (Html msg)
 viewCells cells =
     cells
+        |> cellsToList
         |> List.map viewCellRow
 
 
