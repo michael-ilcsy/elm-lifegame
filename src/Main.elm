@@ -292,7 +292,10 @@ updateSliders slider sliderUpdater updater newVal model =
             \sliders oldModel -> { oldModel | sliders = sliders }
 
         newModel =
-            model |> updater (newVal |> floor) |> slidersUpdater newSliders
+            model
+                |> updater (newVal |> floor)
+                |> slidersUpdater newSliders
+                |> updateCellSize
     in
     ( newModel, Cmd.none )
 
@@ -388,6 +391,29 @@ calcNumOfAliveNeighbors cells neighborsPositions =
                         0 + total
             )
             0
+
+
+updateCellSize : Model -> Model
+updateCellSize model =
+    let
+        arrayCells =
+            cellsToArray model.cells
+
+        newCells =
+            (Array.repeat model.height <| Array.repeat model.width Dead)
+                |> Array.indexedMap
+                    (\yIndex row ->
+                        Array.indexedMap
+                            (\xIndex _ ->
+                                Array.get yIndex arrayCells
+                                    |> Maybe.andThen (Array.get xIndex)
+                                    |> Maybe.withDefault Dead
+                            )
+                            row
+                    )
+                |> cellsArrayToList
+    in
+    { model | cells = newCells }
 
 
 
