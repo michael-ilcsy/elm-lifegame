@@ -165,8 +165,8 @@ isEmptyCells cells =
             (List.all (\cell -> cell == Dead))
 
 
-getCell : Cells -> CellPosition -> Cell
-getCell cells { x, y } =
+getCell : CellPosition -> Cells -> Cell
+getCell { x, y } cells =
     Array.get y cells
         |> Maybe.andThen (Array.get x)
         |> Maybe.withDefault Dead
@@ -370,7 +370,7 @@ calcNumOfAliveNeighbors : Cells -> List CellPosition -> Int
 calcNumOfAliveNeighbors cells neighborsPositions =
     neighborsPositions
         |> List.map
-            (getCell cells)
+            (\position -> getCell position cells)
         |> List.foldl
             (\cell total ->
                 case cell of
@@ -403,7 +403,7 @@ updateCellSize model =
                     (\yIndex row ->
                         Array.indexedMap
                             (\xIndex _ ->
-                                getCell model.cells { x = xIndex, y = yIndex }
+                                getCell { x = xIndex, y = yIndex } model.cells
                             )
                             row
                     )
