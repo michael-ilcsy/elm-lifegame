@@ -172,6 +172,20 @@ getCell { x, y } cells =
         |> Maybe.withDefault Dead
 
 
+setCells : CellPosition -> Cell -> Cells -> Cells
+setCells { x, y } cell cells =
+    let
+        row =
+            Array.get y cells
+    in
+    case row of
+        Nothing ->
+            cells
+
+        Just cellRow ->
+            Array.set y (Array.set x cell cellRow) cells
+
+
 
 ---- UPDATE ----
 
@@ -187,6 +201,7 @@ type Msg
     | StartGame
     | StopGame
     | NextGen Int Time.Posix
+    | ClickCell CellPosition
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -270,6 +285,28 @@ update msg model =
               }
             , Cmd.none
             )
+
+        ClickCell position ->
+            case model.gameState of
+                Setting ->
+                    let
+                        toggledCell =
+                            case getCell position model.cells of
+                                Alive ->
+                                    Dead
+
+                                Dead ->
+                                    Alive
+                    in
+                    ( { model
+                        | cells =
+                            setCells position toggledCell model.cells
+                      }
+                    , Cmd.none
+                    )
+
+                Running _ ->
+                    ( model, Cmd.none )
 
 
 randomCells : { a | width : Int, height : Int, aliveProbability : Int } -> Random.Generator Cells
@@ -492,23 +529,24 @@ viewStopButton gameState =
         [ text "stop" ]
 
 
-viewCells : Cells -> List (Html msg)
+viewCells : Cells -> List (Html Msg)
 viewCells cells =
     cells
-        |> cellsToList
-        |> List.map viewCellRow
+        |> Array.indexedMap
+            (\yIndex row ->
+                tr [] <|
+                    Array.toList <|
+                        Array.indexedMap
+                            (\xIndex cell ->
+                                viewCell { x = xIndex, y = yIndex } cell
+                            )
+                            row
+            )
+        |> Array.toList
 
 
-viewCellRow : List Cell -> Html msg
-viewCellRow cells =
-    tr []
-        (cells
-            |> List.map viewCell
-        )
-
-
-viewCell : Cell -> Html msg
-viewCell cell =
+viewCell : CellPosition -> Cell -> Html Msg
+viewCell position cell =
     td
         [ class
             (if cell == Alive then
@@ -517,6 +555,7 @@ viewCell cell =
              else
                 ""
             )
+        , onClick <| ClickCell position
         ]
         []
 
