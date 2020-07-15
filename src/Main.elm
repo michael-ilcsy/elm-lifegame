@@ -174,11 +174,7 @@ getCell { x, y } cells =
 
 setCells : CellPosition -> Cell -> Cells -> Cells
 setCells { x, y } cell cells =
-    let
-        row =
-            Array.get y cells
-    in
-    case row of
+    case Array.get y cells of
         Nothing ->
             cells
 
