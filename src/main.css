@@ -17,11 +17,35 @@ body {
 }
 
 td {
-    border: 1px solid black;
-    width: 10px;
-    height: 10px;
+    border: 2px solid gray;
+    width: 15px;
+    height: 15px;
 }
 
 td.alive {
     background-color: #00DDFF;
+}
+
+table {
+    margin: auto;
+    border-collapse: collapse;
+}
+
+.content {
+    margin-bottom: 20px;
+}
+
+.generation {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.button-area {
+    margin-top: 15px;
+}
+
+.slider-area:not(:first-of-type) {
+    margin-top: 20px;
 }

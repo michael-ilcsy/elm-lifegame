@@ -464,17 +464,23 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ viewSlider model.sliders.width
-        , viewSlider model.sliders.height
-        , viewSlider model.sliders.aliveProbability
-        , viewSlider model.sliders.interval
-        , div []
-            [ viewGenerateButton model.gameState
-            , viewClearButton model.gameState
+    div [ class "content" ]
+        [ div [ class "slider-area" ]
+            [ viewSlider model.sliders.width
+            , viewSlider model.sliders.height
             ]
-        , viewStartButton model
-        , viewStopButton model.gameState
+        , div [ class "slider-area" ]
+            [ viewSlider model.sliders.aliveProbability
+            , viewSlider model.sliders.interval
+            ]
+        , div [ class "button-area" ]
+            [ div []
+                [ viewGenerateButton model.gameState
+                , viewClearButton model.gameState
+                ]
+            , viewStartButton model
+            , viewStopButton model.gameState
+            ]
         , viewGenerationCount model.gameState
         , table []
             [ tbody []
@@ -560,10 +566,10 @@ viewGenerationCount : GameState -> Html Msg
 viewGenerationCount gameState =
     case gameState of
         Setting ->
-            div [] []
+            div [ class "generation" ] []
 
         Running generationCount ->
-            div [] [ text <| "Generation: " ++ String.fromInt generationCount ]
+            div [ class "generation" ] [ text <| "Generation: " ++ String.fromInt generationCount ]
 
 
 
