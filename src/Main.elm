@@ -69,64 +69,17 @@ init =
 
         interval =
             100
-
-        widthSlider =
-            initSlider
-                { min = 1
-                , max = 50
-                , value = width
-                , step = 1
-                , onChange = ChangeWidth
-                }
-                (\val _ ->
-                    "横のマス数: " ++ (val |> String.fromFloat)
-                )
-
-        heightSlider =
-            initSlider
-                { min = 1
-                , max = 50
-                , value = height
-                , step = 1
-                , onChange = ChangeHeight
-                }
-                (\val _ ->
-                    "縦のマス数: " ++ (val |> String.fromFloat)
-                )
-
-        aliveProbabilitySlider =
-            initSlider
-                { min = 0
-                , max = 100
-                , value = aliveProbability
-                , step = 1
-                , onChange = ChangeProbability
-                }
-                (\val _ ->
-                    "生きているセルの確率: " ++ (val |> String.fromFloat) ++ "%"
-                )
-
-        intervalSlider =
-            initSlider
-                { min = 50
-                , max = 1000
-                , value = interval
-                , step = 50
-                , onChange = ChangeInterval
-                }
-                (\val _ ->
-                    "更新間隔: " ++ (val |> String.fromFloat) ++ "ms"
-                )
     in
-    ( { cells = generateEmptyCells { x = width, y = height }
+    ( { cells = generateEmptyCells { width = width, height = height }
       , width = width
       , height = height
       , sliders =
-            { width = widthSlider
-            , height = heightSlider
-            , aliveProbability = aliveProbabilitySlider
-            , interval = intervalSlider
-            }
+            initSliders
+                { width = width
+                , height = height
+                , aliveProbability = aliveProbability
+                , interval = interval
+                }
       , interval = interval
       , aliveProbability = aliveProbability
       , gameState = Setting
@@ -135,9 +88,9 @@ init =
     )
 
 
-generateEmptyCells : CellPosition -> Cells
-generateEmptyCells { x, y } =
-    Array.repeat y <| Array.repeat x Dead
+generateEmptyCells : { width : Int, height : Int } -> Cells
+generateEmptyCells { width, height } =
+    Array.repeat height <| Array.repeat width Dead
 
 
 initSlider :
@@ -150,30 +103,76 @@ initSlider :
     -> (Float -> Float -> String)
     -> SingleSlider msg
 initSlider options formatter =
-    SingleSlider.init
-        options
-        |> SingleSlider.withMaxFormatter (\_ -> "")
-        |> SingleSlider.withMinFormatter (\_ -> "")
+    SingleSlider.init options
+        |> SingleSlider.withMaxFormatter (always "")
+        |> SingleSlider.withMinFormatter (always "")
         |> SingleSlider.withValueFormatter formatter
+
+
+initSliders : { width : Float, height : Float, aliveProbability : Float, interval : Float } -> Sliders
+initSliders { width, height, aliveProbability, interval } =
+    let
+        widthSlider =
+            initSlider
+                { min = 1
+                , max = 50
+                , value = width
+                , step = 1
+                , onChange = ChangeWidth
+                }
+                (\val _ -> "横のマス数: " ++ String.fromFloat val)
+
+        heightSlider =
+            initSlider
+                { min = 1
+                , max = 50
+                , value = height
+                , step = 1
+                , onChange = ChangeHeight
+                }
+                (\val _ -> "縦のマス数: " ++ String.fromFloat val)
+
+        aliveProbabilitySlider =
+            initSlider
+                { min = 0
+                , max = 100
+                , value = aliveProbability
+                , step = 1
+                , onChange = ChangeProbability
+                }
+                (\val _ -> "生きているセルの確率: " ++ String.fromFloat val ++ "%")
+
+        intervalSlider =
+            initSlider
+                { min = 50
+                , max = 1000
+                , value = interval
+                , step = 50
+                , onChange = ChangeInterval
+                }
+                (\val _ -> "更新間隔: " ++ String.fromFloat val ++ "ms")
+    in
+    { width = widthSlider
+    , height = heightSlider
+    , aliveProbability = aliveProbabilitySlider
+    , interval = intervalSlider
+    }
 
 
 isEmptyCells : Cells -> Bool
 isEmptyCells cells =
-    cells
-        |> cellsToList
-        |> List.all
-            (List.all (\cell -> cell == Dead))
+    cellsToList cells
+        |> List.all (List.all ((==) Dead))
 
 
-getCell : CellPosition -> Cells -> Cell
+getCell : CellPosition -> Cells -> Maybe Cell
 getCell { x, y } cells =
     Array.get y cells
         |> Maybe.andThen (Array.get x)
-        |> Maybe.withDefault Dead
 
 
-setCells : CellPosition -> Cell -> Cells -> Cells
-setCells { x, y } cell cells =
+setCell : CellPosition -> Cell -> Cells -> Cells
+setCell { x, y } cell cells =
     case Array.get y cells of
         Nothing ->
             cells
@@ -191,8 +190,8 @@ type Msg
     | ChangeHeight Float
     | ChangeProbability Float
     | ChangeInterval Float
-    | Generate
-    | GenerateRandomCells Cells
+    | GenerateRandomCells
+    | GetRandomCells Cells
     | Clear
     | StartGame
     | StopGame
@@ -206,12 +205,12 @@ update msg model =
         ChangeWidth width ->
             case model.gameState of
                 Setting ->
-                    model
-                        |> updateSliders
-                            .width
-                            (\slider sliders -> { sliders | width = slider })
-                            (\value oldModel -> { oldModel | width = value })
-                            width
+                    updateSliders
+                        .width
+                        (\slider sliders -> { sliders | width = slider })
+                        (\value oldModel -> { oldModel | width = value })
+                        width
+                        model
 
                 Running _ ->
                     ( model, Cmd.none )
@@ -219,12 +218,12 @@ update msg model =
         ChangeHeight height ->
             case model.gameState of
                 Setting ->
-                    model
-                        |> updateSliders
-                            .height
-                            (\slider sliders -> { sliders | height = slider })
-                            (\value oldModel -> { oldModel | height = value })
-                            height
+                    updateSliders
+                        .height
+                        (\slider sliders -> { sliders | height = slider })
+                        (\value oldModel -> { oldModel | height = value })
+                        height
+                        model
 
                 Running _ ->
                     ( model, Cmd.none )
@@ -232,12 +231,12 @@ update msg model =
         ChangeProbability probability ->
             case model.gameState of
                 Setting ->
-                    model
-                        |> updateSliders
-                            .aliveProbability
-                            (\slider sliders -> { sliders | aliveProbability = slider })
-                            (\value oldModel -> { oldModel | aliveProbability = value })
-                            probability
+                    updateSliders
+                        .aliveProbability
+                        (\slider sliders -> { sliders | aliveProbability = slider })
+                        (\value oldModel -> { oldModel | aliveProbability = value })
+                        probability
+                        model
 
                 Running _ ->
                     ( model, Cmd.none )
@@ -245,25 +244,25 @@ update msg model =
         ChangeInterval interval ->
             case model.gameState of
                 Setting ->
-                    model
-                        |> updateSliders
-                            .interval
-                            (\slider sliders -> { sliders | interval = slider })
-                            (\value oldModel -> { oldModel | interval = value })
-                            interval
+                    updateSliders
+                        .interval
+                        (\slider sliders -> { sliders | interval = slider })
+                        (\value oldModel -> { oldModel | interval = value })
+                        interval
+                        model
 
                 Running _ ->
                     ( model, Cmd.none )
 
-        Generate ->
+        GenerateRandomCells ->
             ( model, generateRandomCells model )
 
-        GenerateRandomCells cells ->
+        GetRandomCells cells ->
             ( { model | cells = cells }, Cmd.none )
 
         Clear ->
             ( { model
-                | cells = generateEmptyCells { x = model.width, y = model.height }
+                | cells = generateEmptyCells { width = model.width, height = model.height }
               }
             , Cmd.none
             )
@@ -287,7 +286,7 @@ update msg model =
                 Setting ->
                     let
                         toggledCell =
-                            case getCell position model.cells of
+                            case getCell position model.cells |> Maybe.withDefault Dead of
                                 Alive ->
                                     Dead
 
@@ -296,7 +295,7 @@ update msg model =
                     in
                     ( { model
                         | cells =
-                            setCells position toggledCell model.cells
+                            setCell position toggledCell model.cells
                       }
                     , Cmd.none
                     )
@@ -310,8 +309,8 @@ randomCells { width, height, aliveProbability } =
     Random.list height
         (Random.list width
             (Random.weighted
-                ( aliveProbability |> toFloat, Alive )
-                [ ( 100 - aliveProbability |> toFloat, Dead ) ]
+                ( toFloat aliveProbability, Alive )
+                [ ( toFloat <| 100 - aliveProbability, Dead ) ]
             )
         )
         |> Random.map listToCells
@@ -319,7 +318,7 @@ randomCells { width, height, aliveProbability } =
 
 generateRandomCells : { a | width : Int, height : Int, aliveProbability : Int } -> Cmd Msg
 generateRandomCells model =
-    Random.generate GenerateRandomCells (randomCells model)
+    Random.generate GetRandomCells (randomCells model)
 
 
 updateSliders :
@@ -335,14 +334,13 @@ updateSliders slider sliderUpdater updater newVal model =
             model.sliders |> slider |> SingleSlider.update newVal
 
         newSliders =
-            model.sliders |> sliderUpdater newSlider
+            sliderUpdater newSlider model.sliders
 
-        slidersUpdater =
-            \sliders oldModel -> { oldModel | sliders = sliders }
+        slidersUpdater sliders oldModel =
+            { oldModel | sliders = sliders }
 
         newModel =
-            model
-                |> updater (newVal |> floor)
+            updater (floor newVal) model
                 |> slidersUpdater newSliders
                 |> updateCellSize
     in
@@ -351,15 +349,15 @@ updateSliders slider sliderUpdater updater newVal model =
 
 nextGen : Cells -> Cells
 nextGen cells =
-    cells
-        |> Array.indexedMap
-            (\yIndex row ->
-                Array.indexedMap
-                    (\xIndex cell ->
-                        resolveCell { x = xIndex, y = yIndex } cell cells
-                    )
-                    row
-            )
+    Array.indexedMap
+        (\yIndex row ->
+            Array.indexedMap
+                (\xIndex cell ->
+                    resolveCell { x = xIndex, y = yIndex } cell cells
+                )
+                row
+        )
+        cells
 
 
 resolveCell : CellPosition -> Cell -> Cells -> Cell
@@ -377,42 +375,41 @@ resolveCell { x, y } cell cells =
             ]
 
         numOfAliveNeighbors =
-            neighborsPositions
-                |> calcNumOfAliveNeighbors cells
+            calcNumOfAliveNeighbors cells neighborsPositions
     in
-    case cell of
-        Dead ->
-            if numOfAliveNeighbors == 3 then
-                Alive
+    case ( cell, numOfAliveNeighbors ) of
+        ( Dead, 3 ) ->
+            Alive
 
-            else
-                Dead
+        ( Dead, _ ) ->
+            Dead
 
-        Alive ->
-            if numOfAliveNeighbors <= 1 then
-                Dead
+        ( Alive, 2 ) ->
+            Alive
 
-            else if numOfAliveNeighbors == 2 || numOfAliveNeighbors == 3 then
-                Alive
+        ( Alive, 3 ) ->
+            Alive
 
-            else
-                Dead
+        ( Alive, _ ) ->
+            Dead
 
 
 calcNumOfAliveNeighbors : Cells -> List CellPosition -> Int
 calcNumOfAliveNeighbors cells neighborsPositions =
-    neighborsPositions
-        |> List.map
-            (\position -> getCell position cells)
-        |> List.foldl
-            (\cell total ->
-                case cell of
-                    Alive ->
-                        1 + total
+    List.map
+        (\position -> getCell position cells |> Maybe.withDefault Dead)
+        neighborsPositions
+        |> List.map cellToInt
+        |> List.sum
 
-                    Dead ->
-                        0 + total
-            )
+
+cellToInt : Cell -> Int
+cellToInt cell =
+    case cell of
+        Alive ->
+            1
+
+        Dead ->
             0
 
 
@@ -431,12 +428,12 @@ updateCellSize : Model -> Model
 updateCellSize model =
     let
         newCells =
-            generateEmptyCells { x = model.width, y = model.height }
+            generateEmptyCells { width = model.width, height = model.height }
                 |> Array.indexedMap
                     (\yIndex row ->
                         Array.indexedMap
                             (\xIndex _ ->
-                                getCell { x = xIndex, y = yIndex } model.cells
+                                getCell { x = xIndex, y = yIndex } model.cells |> Maybe.withDefault Dead
                             )
                             row
                     )
@@ -498,7 +495,7 @@ viewSlider slider =
 viewGenerateButton : GameState -> Html Msg
 viewGenerateButton gameState =
     button
-        [ onClick Generate
+        [ onClick GenerateRandomCells
         , disabled <| gameState /= Setting
         ]
         [ text "generate" ]
@@ -533,17 +530,17 @@ viewStopButton gameState =
 
 viewCells : Cells -> List (Html Msg)
 viewCells cells =
-    cells
-        |> Array.indexedMap
-            (\yIndex row ->
-                tr [] <|
-                    Array.toList <|
-                        Array.indexedMap
-                            (\xIndex cell ->
-                                viewCell { x = xIndex, y = yIndex } cell
-                            )
-                            row
-            )
+    Array.indexedMap
+        (\yIndex row ->
+            tr [] <|
+                Array.toList <|
+                    Array.indexedMap
+                        (\xIndex cell ->
+                            viewCell { x = xIndex, y = yIndex } cell
+                        )
+                        row
+        )
+        cells
         |> Array.toList
 
 

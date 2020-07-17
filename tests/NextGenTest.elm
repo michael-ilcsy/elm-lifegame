@@ -88,17 +88,18 @@ deadNormalCellsTestHelper =
 
 cellsTestDescription : Int -> Cell -> String
 cellsTestDescription count cell =
-    "周りの生きたセルが"
-        ++ String.fromInt count
-        ++ "のときは"
-        ++ (case cell of
-                Alive ->
-                    "生存"
+    String.concat
+        [ "周りの生きたセルが"
+        , String.fromInt count
+        , "のときは"
+        , case cell of
+            Alive ->
+                "生存"
 
-                Dead ->
-                    "死滅"
-           )
-        ++ "すること"
+            Dead ->
+                "死滅"
+        , "すること"
+        ]
 
 
 normalCellsTestHelper : Bool -> Int -> Cell -> Test
